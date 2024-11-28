@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 // import { fetch, request } from "undici";
 
@@ -28,7 +29,11 @@ app.use("*", (c, next) => {
 app.all("*", async (c) => {
   try {
     const url = new URL(c.req.url);
+
     const targetPath = url.pathname + url.search;
+
+    if (targetPath === "/") return c.text("nothing here", 200);
+
     const apiUrl = API_BASE_URL + targetPath;
 
     const res = await fetch(apiUrl, {
@@ -50,4 +55,10 @@ app.all("*", async (c) => {
   }
 });
 
-export default app;
+const port = 3000;
+console.log(`Server is running on http://localhost:${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});
