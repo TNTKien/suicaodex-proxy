@@ -90,6 +90,9 @@ app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function ()
                         status: res.status,
                         headers: {
                             "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
                         },
                     })];
             case 2:
