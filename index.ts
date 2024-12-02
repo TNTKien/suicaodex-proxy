@@ -159,7 +159,7 @@ app.all("*", async (c) => {
   }
 });
 
-const port = 3001;
+const port = 3000;
 console.log(`Server is running on http://localhost:${port}`);
 
 serve({
