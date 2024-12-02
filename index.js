@@ -37,10 +37,36 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var node_server_1 = require("@hono/node-server");
+var axios_1 = require("axios");
 var hono_1 = require("hono");
 // import { fetch, request } from "undici";
 var app = new hono_1.Hono();
 var API_BASE_URL = "https://api.mangadex.org";
+// Bộ nhớ tạm với TTL
+var chapterCache = new Map();
+var CACHE_TTL = 10 * 60 * 1000; // 10 phút
+// Hàm thêm vào cache với TTL
+function setCacheWithTTL(key, value) {
+    var expiration = Date.now() + CACHE_TTL;
+    chapterCache.set(key, { value: value, expiration: expiration });
+    // Lên lịch tự động xóa sau TTL
+    setTimeout(function () {
+        var _a;
+        if (((_a = chapterCache.get(key)) === null || _a === void 0 ? void 0 : _a.expiration) <= Date.now()) {
+            chapterCache.delete(key);
+        }
+    }, CACHE_TTL);
+}
+// Hàm kiểm tra cache
+function getCache(key) {
+    var cached = chapterCache.get(key);
+    if (cached && cached.expiration > Date.now()) {
+        return cached.value;
+    }
+    // Nếu dữ liệu hết hạn, xóa khỏi cache
+    chapterCache.delete(key);
+    return null;
+}
 // headers
 app.use("*", function (c, next) { return __awaiter(void 0, void 0, void 0, function () {
     var viaHeader, userAgent;
@@ -67,8 +93,84 @@ app.use("*", function (c, next) {
     c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
     return next();
 });
+app.get("/ch/:id", function (c) { return __awaiter(void 0, void 0, void 0, function () {
+    var id, atHomeAPIUrl, links, serverData, baseUrl_1, hash_1, fileNames, proxiedLinks, error_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                id = c.req.param("id");
+                atHomeAPIUrl = "".concat(API_BASE_URL, "/at-home/server/").concat(id);
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                links = getCache(id);
+                if (!!links) return [3 /*break*/, 3];
+                return [4 /*yield*/, axios_1.default.get(atHomeAPIUrl, {
+                        headers: {
+                            "User-Agent": c.req.header("User-Agent") || "SuicaoDex/1.0",
+                        },
+                    })];
+            case 2:
+                serverData = (_a.sent()).data;
+                baseUrl_1 = serverData.baseUrl;
+                hash_1 = serverData.chapter.hash;
+                fileNames = Object.values(serverData.chapter.data);
+                links = fileNames.map(function (fileName) { return "".concat(baseUrl_1, "/data/").concat(hash_1, "/").concat(fileName); });
+                setCacheWithTTL(id, links);
+                _a.label = 3;
+            case 3:
+                proxiedLinks = links.map(function (_, index) { return "images/".concat(id, "/").concat(index); });
+                return [2 /*return*/, c.json({
+                        chapterID: id,
+                        images: proxiedLinks,
+                    }, 200)];
+            case 4:
+                error_1 = _a.sent();
+                console.error(error_1);
+                return [2 /*return*/, c.text("Internal Server Error", 500)];
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
+app.get("/images/:id/:index", function (c) { return __awaiter(void 0, void 0, void 0, function () {
+    var id, index, links, imageUrl, response, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                id = c.req.param("id");
+                index = c.req.param("index");
+                links = getCache(id);
+                if (!links)
+                    return [2 /*return*/, c.text("Chapter not found", 404)];
+                imageUrl = links[index];
+                if (!imageUrl)
+                    return [2 /*return*/, c.text("Image not found", 404)];
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, axios_1.default.get(imageUrl, { responseType: "stream" })];
+            case 2:
+                response = _a.sent();
+                //c.res.headers.set("Content-Type", response.headers["content-type"]);
+                return [2 /*return*/, new Response(response.data, {
+                        status: response.status,
+                        headers: {
+                            "Content-Type": response.headers["content-type"],
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                        },
+                    })];
+            case 3:
+                error_2 = _a.sent();
+                console.error(error_2);
+                return [2 /*return*/, c.text("Internal Server Error", 500)];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
 app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function () {
-    var url, targetPath, apiUrl, res, error_1;
+    var url, targetPath, apiUrl, res, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -96,14 +198,14 @@ app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function ()
                         },
                     })];
             case 2:
-                error_1 = _a.sent();
-                console.error(error_1);
+                error_3 = _a.sent();
+                console.error(error_3);
                 return [2 /*return*/, c.text("Internal Server Error", 500)];
             case 3: return [2 /*return*/];
         }
     });
 }); });
-var port = 3000;
+var port = 3001;
 console.log("Server is running on http://localhost:".concat(port));
 (0, node_server_1.serve)({
     fetch: app.fetch,
