@@ -86,6 +86,12 @@ app.use("*", function (c, next) { return __awaiter(void 0, void 0, void 0, funct
         }
     });
 }); });
+app.options("*", function (c) {
+    c.header("Access-Control-Allow-Origin", "*");
+    c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    return c.text("", 204); // Trả về 204 No Content
+});
 // CORS
 app.use("*", function (c, next) {
     c.header("Access-Control-Allow-Origin", "*");
@@ -205,7 +211,7 @@ app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function ()
         }
     });
 }); });
-var port = 3001;
+var port = 3000;
 console.log("Server is running on http://localhost:".concat(port));
 (0, node_server_1.serve)({
     fetch: app.fetch,

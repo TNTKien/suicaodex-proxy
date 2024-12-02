@@ -46,6 +46,13 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+app.options("*", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  return c.text("", 204); // Trả về 204 No Content
+});
+
 // CORS
 app.use("*", (c, next) => {
   c.header("Access-Control-Allow-Origin", "*");
