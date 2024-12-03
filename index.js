@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var node_server_1 = require("@hono/node-server");
 var axios_1 = require("axios");
 var hono_1 = require("hono");
+var sharp = require("sharp");
 // import { fetch, request } from "undici";
 var app = new hono_1.Hono();
 var API_BASE_URL = "https://api.mangadex.org";
@@ -86,12 +87,12 @@ app.use("*", function (c, next) { return __awaiter(void 0, void 0, void 0, funct
         }
     });
 }); });
-app.options("*", function (c) {
-    c.header("Access-Control-Allow-Origin", "*");
-    c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-    return c.text("", 204); // Trả về 204 No Content
-});
+// app.options("*", (c) => {
+//   c.header("Access-Control-Allow-Origin", "*");
+//   c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+//   c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+//   return c.text("", 204); // Trả về 204 No Content
+// });
 // CORS
 app.use("*", function (c, next) {
     c.header("Access-Control-Allow-Origin", "*");
@@ -139,7 +140,7 @@ app.get("/ch/:id", function (c) { return __awaiter(void 0, void 0, void 0, funct
     });
 }); });
 app.get("/images/:id/:index", function (c) { return __awaiter(void 0, void 0, void 0, function () {
-    var id, index, links, imageUrl, response, error_2;
+    var id, index, links, imageUrl, response, webpBuffer, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -153,25 +154,24 @@ app.get("/images/:id/:index", function (c) { return __awaiter(void 0, void 0, vo
                     return [2 /*return*/, c.text("Image not found", 404)];
                 _a.label = 1;
             case 1:
-                _a.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, axios_1.default.get(imageUrl, { responseType: "stream" })];
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, axios_1.default.get(imageUrl, {
+                        responseType: "arraybuffer", // Nhận dữ liệu ảnh dưới dạng buffer
+                    })];
             case 2:
                 response = _a.sent();
-                //c.res.headers.set("Content-Type", response.headers["content-type"]);
-                return [2 /*return*/, new Response(response.data, {
-                        status: response.status,
-                        headers: {
-                            "Content-Type": response.headers["content-type"],
-                            "Access-Control-Allow-Origin": "*",
-                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                        },
-                    })];
+                return [4 /*yield*/, sharp(response.data)
+                        .webp() // Chuyển đổi sang WebP
+                        .toBuffer()];
             case 3:
+                webpBuffer = _a.sent();
+                c.header("Content-Type", "image/webp");
+                return [2 /*return*/, c.body(webpBuffer)];
+            case 4:
                 error_2 = _a.sent();
                 console.error(error_2);
                 return [2 /*return*/, c.text("Internal Server Error", 500)];
-            case 4: return [2 /*return*/];
+            case 5: return [2 /*return*/];
         }
     });
 }); });

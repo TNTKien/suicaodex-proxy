@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import axios from "axios";
 import { Hono } from "hono";
+import sharp = require("sharp");
 // import { fetch, request } from "undici";
 
 const app = new Hono();
@@ -46,12 +47,12 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.options("*", (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  return c.text("", 204); // Trả về 204 No Content
-});
+// app.options("*", (c) => {
+//   c.header("Access-Control-Allow-Origin", "*");
+//   c.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+//   c.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+//   return c.text("", 204); // Trả về 204 No Content
+// });
 
 // CORS
 app.use("*", (c, next) => {
@@ -119,18 +120,30 @@ app.get("/images/:id/:index", async (c) => {
   const imageUrl = links[index];
   if (!imageUrl) return c.text("Image not found", 404);
   try {
-    const response = await axios.get(imageUrl, { responseType: "stream" });
-    //c.res.headers.set("Content-Type", response.headers["content-type"]);
+    // const response = await axios.get(imageUrl, { responseType: "stream" });
+    // //c.res.headers.set("Content-Type", response.headers["content-type"]);
 
-    return new Response(response.data, {
-      status: response.status,
-      headers: {
-        "Content-Type": response.headers["content-type"],
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
+    // return new Response(response.data, {
+    //   status: response.status,
+    //   headers: {
+    //     "Content-Type": response.headers["content-type"],
+    //     "Access-Control-Allow-Origin": "*",
+    //     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    //     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    //   },
+    // });
+
+    const response = await axios.get(imageUrl, {
+      responseType: "arraybuffer", // Nhận dữ liệu ảnh dưới dạng buffer
     });
+
+    // Chuyển đổi ảnh sang WebP
+    const webpBuffer = await sharp(response.data)
+      .webp() // Chuyển đổi sang WebP
+      .toBuffer();
+
+    c.header("Content-Type", "image/webp");
+    return c.body(webpBuffer);
   } catch (error) {
     console.error(error);
     return c.text("Internal Server Error", 500);
