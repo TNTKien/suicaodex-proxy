@@ -193,7 +193,7 @@ app.get("/covers/:manga-id/:cover-filename", function (c) { return __awaiter(voi
                     return [2 /*return*/, c.text("Invalid format", 400)];
                 coverUrl = "".concat(COVER_URL, "/").concat(mangaId, "/").concat(coverFilename, ".").concat(format);
                 if (!!width)
-                    coverUrl += ".".concat(width, ".").concat(format);
+                    coverUrl += ".".concat(width, ".jpg");
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);

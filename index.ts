@@ -154,19 +154,19 @@ app.get("/images/:id/:index", async (c) => {
 app.get("/covers/:manga-id/:cover-filename", async (c) => {
   const mangaId = c.req.param("manga-id");
   const coverFilename = c.req.param("cover-filename");
-  const width = c.req.query("w");
-  const format = c.req.query("f");
+  // const width = c.req.query("w");
+  // const format = c.req.query("f");
 
-  if (!mangaId || !coverFilename) return c.text("Not Found", 400);
-  if (!!width && width !== "512" && width !== "256")
-    return c.text("Invalid width", 400);
+  // if (!mangaId || !coverFilename) return c.text("Not Found", 400);
+  // if (!!width && width !== "512" && width !== "256")
+  //   return c.text("Invalid width", 400);
 
-  if (format !== "jpg" && format !== "png")
-    return c.text("Invalid format", 400);
+  // if (format !== "jpg" && format !== "png")
+  //   return c.text("Invalid format", 400);
 
-  let coverUrl = `${COVER_URL}/${mangaId}/${coverFilename}.${format}`;
+  let coverUrl = `${COVER_URL}/${mangaId}/${coverFilename}`;
 
-  if (!!width) coverUrl += `.${width}.${format}`;
+  // if (!!width) coverUrl += `.${width}.jpg`;
 
   try {
     const response = await axios.get(coverUrl, {
@@ -214,7 +214,7 @@ app.all("*", async (c) => {
   }
 });
 
-const port = 3000;
+const port = 3001;
 console.log(`Server is running on http://localhost:${port}`);
 
 serve({
