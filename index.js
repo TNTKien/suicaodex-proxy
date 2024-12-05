@@ -43,6 +43,7 @@ var sharp = require("sharp");
 // import { fetch, request } from "undici";
 var app = new hono_1.Hono();
 var API_BASE_URL = "https://api.mangadex.org";
+var COVER_URL = "https://mangadex.org/covers";
 // Bộ nhớ tạm với TTL
 var chapterCache = new Map();
 var CACHE_TTL = 10 * 60 * 1000; // 10 phút
@@ -175,8 +176,49 @@ app.get("/images/:id/:index", function (c) { return __awaiter(void 0, void 0, vo
         }
     });
 }); });
+app.get("/covers/:manga-id/:cover-filename", function (c) { return __awaiter(void 0, void 0, void 0, function () {
+    var mangaId, coverFilename, width, format, coverUrl, response, webpBuffer, error_3;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                mangaId = c.req.param("manga-id");
+                coverFilename = c.req.param("cover-filename");
+                width = c.req.query("w");
+                format = c.req.query("f");
+                if (!mangaId || !coverFilename)
+                    return [2 /*return*/, c.text("Not Found", 400)];
+                if (!!width && width !== "512" && width !== "256")
+                    return [2 /*return*/, c.text("Invalid width", 400)];
+                if (format !== "jpg" && format !== "png")
+                    return [2 /*return*/, c.text("Invalid format", 400)];
+                coverUrl = "".concat(COVER_URL, "/").concat(mangaId, "/").concat(coverFilename, ".").concat(format);
+                if (!!width)
+                    coverUrl += ".".concat(width, ".").concat(format);
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, axios_1.default.get(coverUrl, {
+                        responseType: "arraybuffer",
+                    })];
+            case 2:
+                response = _a.sent();
+                return [4 /*yield*/, sharp(response.data)
+                        .webp() // Chuyển đổi sang WebP
+                        .toBuffer()];
+            case 3:
+                webpBuffer = _a.sent();
+                c.header("Content-Type", "image/webp");
+                return [2 /*return*/, c.body(webpBuffer)];
+            case 4:
+                error_3 = _a.sent();
+                console.error(error_3);
+                return [2 /*return*/, c.text("Internal Server Error", 500)];
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
 app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function () {
-    var url, targetPath, apiUrl, res, error_3;
+    var url, targetPath, apiUrl, res, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -204,8 +246,8 @@ app.all("*", function (c) { return __awaiter(void 0, void 0, void 0, function ()
                         },
                     })];
             case 2:
-                error_3 = _a.sent();
-                console.error(error_3);
+                error_4 = _a.sent();
+                console.error(error_4);
                 return [2 /*return*/, c.text("Internal Server Error", 500)];
             case 3: return [2 /*return*/];
         }

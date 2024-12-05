@@ -7,6 +7,7 @@ import sharp = require("sharp");
 const app = new Hono();
 
 const API_BASE_URL = "https://api.mangadex.org";
+const COVER_URL = "https://mangadex.org/covers";
 
 // Bộ nhớ tạm với TTL
 const chapterCache = new Map();
@@ -138,6 +139,40 @@ app.get("/images/:id/:index", async (c) => {
     });
 
     // Chuyển đổi ảnh sang WebP
+    const webpBuffer = await sharp(response.data)
+      .webp() // Chuyển đổi sang WebP
+      .toBuffer();
+
+    c.header("Content-Type", "image/webp");
+    return c.body(webpBuffer);
+  } catch (error) {
+    console.error(error);
+    return c.text("Internal Server Error", 500);
+  }
+});
+
+app.get("/covers/:manga-id/:cover-filename", async (c) => {
+  const mangaId = c.req.param("manga-id");
+  const coverFilename = c.req.param("cover-filename");
+  const width = c.req.query("w");
+  const format = c.req.query("f");
+
+  if (!mangaId || !coverFilename) return c.text("Not Found", 400);
+  if (!!width && width !== "512" && width !== "256")
+    return c.text("Invalid width", 400);
+
+  if (format !== "jpg" && format !== "png")
+    return c.text("Invalid format", 400);
+
+  let coverUrl = `${COVER_URL}/${mangaId}/${coverFilename}.${format}`;
+
+  if (!!width) coverUrl += `.${width}.${format}`;
+
+  try {
+    const response = await axios.get(coverUrl, {
+      responseType: "arraybuffer",
+    });
+
     const webpBuffer = await sharp(response.data)
       .webp() // Chuyển đổi sang WebP
       .toBuffer();
