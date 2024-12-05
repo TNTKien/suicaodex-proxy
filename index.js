@@ -177,23 +177,13 @@ app.get("/images/:id/:index", function (c) { return __awaiter(void 0, void 0, vo
     });
 }); });
 app.get("/covers/:manga-id/:cover-filename", function (c) { return __awaiter(void 0, void 0, void 0, function () {
-    var mangaId, coverFilename, width, format, coverUrl, response, webpBuffer, error_3;
+    var mangaId, coverFilename, coverUrl, response, webpBuffer, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 mangaId = c.req.param("manga-id");
                 coverFilename = c.req.param("cover-filename");
-                width = c.req.query("w");
-                format = c.req.query("f");
-                if (!mangaId || !coverFilename)
-                    return [2 /*return*/, c.text("Not Found", 400)];
-                if (!!width && width !== "512" && width !== "256")
-                    return [2 /*return*/, c.text("Invalid width", 400)];
-                if (format !== "jpg" && format !== "png")
-                    return [2 /*return*/, c.text("Invalid format", 400)];
-                coverUrl = "".concat(COVER_URL, "/").concat(mangaId, "/").concat(coverFilename, ".").concat(format);
-                if (!!width)
-                    coverUrl += ".".concat(width, ".jpg");
+                coverUrl = "".concat(COVER_URL, "/").concat(mangaId, "/").concat(coverFilename);
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);
